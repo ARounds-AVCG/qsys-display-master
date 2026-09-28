@@ -96,7 +96,7 @@ local function copy(src)
 end
 
 --------------------------------------------------------------------------------
--- 1  EPSON GENERIC PROJECTOR  NETWORK
+-- EPSON GENERIC PROJECTOR  NETWORK
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:NETWORK"] = {
   make = "EPSON", model = "GENERIC PROJECTOR",
@@ -153,7 +153,7 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 2  EPSON GENERIC PROJECTOR  SERIAL
+-- EPSON GENERIC PROJECTOR  SERIAL
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:SERIAL"] = copy(Protocols["EPSON:PROJECTOR:NETWORK"])
 Protocols["EPSON:PROJECTOR:SERIAL"].transport = MODE.SERIAL
@@ -161,7 +161,7 @@ Protocols["EPSON:PROJECTOR:SERIAL"].init = ""
 Protocols["EPSON:PROJECTOR:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
--- 3  LG GENERIC LCD  NETWORK
+-- LG GENERIC LCD  NETWORK
 --------------------------------------------------------------------------------
 Protocols["LG:LCD:NETWORK"] = {
   make = "LG", model = "GENERIC LCD",
@@ -217,7 +217,7 @@ Protocols["LG:LCD:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 4  LG GENERIC LCD  SERIAL
+-- LG GENERIC LCD  SERIAL
 --------------------------------------------------------------------------------
 Protocols["LG:LCD:SERIAL"] = copy(Protocols["LG:LCD:NETWORK"])
 Protocols["LG:LCD:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
@@ -225,7 +225,7 @@ Protocols["LG:LCD:SERIAL"].transport = MODE.SERIAL
 Protocols["LG:LCD:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
--- 5  PANASONIC GENERIC PROJECTOR  NETWORK
+-- PANASONIC GENERIC PROJECTOR  NETWORK
 --------------------------------------------------------------------------------
 Protocols["PANASONIC:PROJECTOR:NETWORK"] = {
   make = "PANASONIC", model = "GENERIC PROJECTOR",
@@ -278,14 +278,14 @@ Protocols["PANASONIC:PROJECTOR:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 7  PANASONIC GENERIC LCD  NETWORK
+-- PANASONIC GENERIC LCD  NETWORK
 --------------------------------------------------------------------------------
 Protocols["PANASONIC:LCD:NETWORK"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
 Protocols["PANASONIC:LCD:NETWORK"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
 Protocols["PANASONIC:LCD:NETWORK"].model = "GENERIC LCD"
 
 --------------------------------------------------------------------------------
--- 9  SONY PROJECTOR  NETWORK  (ADCP / SDAP style ASCII, LF)
+-- SONY PROJECTOR  NETWORK  (ADCP / SDAP style ASCII, LF)
 --------------------------------------------------------------------------------
 Protocols["SONY:PROJECTOR:NETWORK"] = {
   make = "SONY", model = "GENERIC PROJECTOR",
@@ -334,7 +334,7 @@ Protocols["SONY:PROJECTOR:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 11  SONY LCD  NETWORK  (Simple IP *SC / *SE / *SA)
+-- SONY LCD  NETWORK  (Simple IP *SC / *SE / *SA)
 --------------------------------------------------------------------------------
 Protocols["SONY:LCD:NETWORK"] = {
   make = "SONY", model = "GENERIC LCD",
@@ -396,7 +396,7 @@ Protocols["SONY:LCD:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 12  SONY LCD  SERIAL
+-- SONY LCD  SERIAL
 --------------------------------------------------------------------------------
 Protocols["SONY:LCD:SERIAL"] = copy(Protocols["SONY:LCD:NETWORK"])
 Protocols["SONY:LCD:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
@@ -404,7 +404,7 @@ Protocols["SONY:LCD:SERIAL"].transport = MODE.SERIAL
 Protocols["SONY:LCD:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
--- 13  NEC PROJECTOR  NETWORK  (ASCII PJ-style on 7142)
+-- NEC PROJECTOR  NETWORK  (ASCII PJ-style on 7142)
 --------------------------------------------------------------------------------
 Protocols["NEC:PROJECTOR:NETWORK"] = {
   make = "NEC", model = "GENERIC PROJECTOR",
@@ -454,7 +454,7 @@ Protocols["NEC:PROJECTOR:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 14 / 15 / 16  NEC SERIAL + LCD variants
+-- NEC SERIAL + LCD variants
 --------------------------------------------------------------------------------
 Protocols["NEC:PROJECTOR:SERIAL"] = copy(Protocols["NEC:PROJECTOR:NETWORK"])
 Protocols["NEC:PROJECTOR:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
@@ -472,7 +472,7 @@ Protocols["NEC:LCD:SERIAL"].transport = MODE.SERIAL
 Protocols["NEC:LCD:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
--- 17  NEC OLD LCD  NETWORK  (short ASCII)
+-- NEC OLD LCD  NETWORK  (short ASCII)
 --------------------------------------------------------------------------------
 Protocols["NEC:OLD LCD:NETWORK"] = {
   make = "NEC", model = "GENERIC OLD LCD",
@@ -521,7 +521,7 @@ Protocols["NEC:OLD LCD:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 19  BARCO PROJECTOR  NETWORK  (telnet 3023)
+-- BARCO PROJECTOR  NETWORK  (telnet 3023)
 --------------------------------------------------------------------------------
 Protocols["BARCO:PROJECTOR:NETWORK"] = {
   make = "BARCO", model = "GENERIC PROJECTOR",
@@ -570,7 +570,7 @@ Protocols["BARCO:PROJECTOR:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 21  PHILIPS LCD  NETWORK  (binary, no terminator)
+-- PHILIPS LCD  NETWORK  (binary, no terminator)
 --------------------------------------------------------------------------------
 Protocols["PHILIPS:LCD:NETWORK"] = {
   make = "PHILIPS", model = "GENERIC LCD",
@@ -631,7 +631,7 @@ Protocols["PHILIPS:LCD:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
--- 28  SAMSUNG LCD  NETWORK  (MDC, display ID hardcoded to 1)
+-- SAMSUNG LCD  NETWORK  (MDC, display ID hardcoded to 1)
 -- Packet is AA CMD 01 LEN DATA... CS. CS is already in each string
 -- (low byte of CMD+01+LEN+DATA). No checksum function.
 -- TCP 1515. Serial uses the same bytes, 9600 8N1, no CR.
@@ -709,7 +709,7 @@ Protocols["SAMSUNG:LCD:SERIAL"].transport = MODE.SERIAL
 Protocols["SAMSUNG:LCD:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
--- 30  PJLINK GENERIC  NETWORK
+-- PJLINK GENERIC  NETWORK
 --------------------------------------------------------------------------------
 Protocols["PJLINK:GENERIC:NETWORK"] = {
   make = "PJLINK", model = "GENERIC PJLINK",
