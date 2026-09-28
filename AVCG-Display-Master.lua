@@ -41,7 +41,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.14"
+local VERSION       = "1.0.15"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -997,8 +997,21 @@ end
 --------------------------------------------------------------------------------
 local function HexDump(s)
   if not s or #s == 0 then return "" end
-  if s:match("^[%g%s]*$") and not s:match("%c") then
-    return s:gsub("\r", "<CR>"):gsub("\n", "<LF>")
+  -- Text protocols stay readable (PWR ON<CR>). Binary / any non-ASCII
+  -- byte is printed as uppercase hex so nulls are not swallowed.
+  local binary = Display and Display.binary
+  if not binary then
+    local ascii = true
+    for i = 1, #s do
+      local b = s:byte(i)
+      if b ~= 13 and b ~= 10 and (b < 32 or b > 126) then
+        ascii = false
+        break
+      end
+    end
+    if ascii then
+      return (s:gsub("\r", "<CR>"):gsub("\n", "<LF>"))
+    end
   end
   local t = {}
   for i = 1, #s do
@@ -1234,7 +1247,7 @@ local function Enqueue(cmd, urgent)
     LastPollOff  = Now()
     LastPollWarm = Now()
     LastPollLamp = Now()
-    Debug("QUE ! " .. cmd .. "  (" .. #Queue.items .. ")")
+    Debug("QUE ! " .. HexDump(cmd) .. "  (" .. #Queue.items .. ")")
   else
     for _, c in ipairs(Queue.items) do
       if c == cmd then return end
@@ -1242,7 +1255,7 @@ local function Enqueue(cmd, urgent)
     end
     if #Queue.items >= MAX_QUEUE then table.remove(Queue.items, 1) end
     table.insert(Queue.items, cmd)
-    Debug("QUE +" .. cmd .. "  (" .. #Queue.items .. ")")
+    Debug("QUE +" .. HexDump(cmd) .. "  (" .. #Queue.items .. ")")
   end
 
   if not Display then return end
@@ -1360,7 +1373,7 @@ local function HandleRx(raw)
     local rejected = Queue.sent
     Queue.sent = ""
     Queue.inflight = false
-    Notify("DEVICE ERROR" .. (rejected ~= "" and (" (" .. rejected .. ")") or ""))
+    Notify("DEVICE ERROR" .. (rejected ~= "" and (" (" .. HexDump(rejected) .. ")") or ""))
     PushFeedback()
     ProcessQueue()
     return
@@ -1685,7 +1698,7 @@ end
 
 function Control(cmd)
   if not cmd or cmd == "" then return end
-  Debug("CMD " .. cmd)
+  Debug("CMD " .. HexDump(cmd))
 
   if cmd == "POWER=1" or cmd == "POWER=0" then
     Power(cmd)
@@ -1966,7 +1979,7 @@ Tick.EventHandler = function()
       else
         -- Sets (SOURCE 30, PWR ON, …) often get no reply on the RMC3 farm.
         -- Do not retry the set; drain the next item (usually SOURCE?).
-        Debug("no ACK for set " .. tostring(Queue.sent))
+        Debug("no ACK for set " .. HexDump(tostring(Queue.sent or "")))
         ProcessQueue()
       end
     end
