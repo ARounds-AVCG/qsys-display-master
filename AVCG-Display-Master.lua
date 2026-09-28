@@ -99,7 +99,7 @@ end
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:NETWORK"] = {
   make = "EPSON", model = "GENERIC PROJECTOR",
-  input_label = { "INPUT 1", "INPUT 2", "INPUT 3", "INPUT 4", "INPUT 5", "INPUT 6" },
+  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBASET", "MIRRORING", "SDI" },
   transport = MODE.IP, port = 3629, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "ESC/VP.net\x10\x03\x00\x00\x00\x00",
@@ -107,7 +107,7 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
   tx = {
     pwr_on      = "PWR ON",
     pwr_off     = "PWR OFF",
-    input       = { "SOURCE 30", "SOURCE A0", "SOURCE 11", "SOURCE 21" },
+    input       = { "SOURCE 30", "SOURCE A0", "SOURCE C0", "SOURCE 80", "SOURCE 56", "SOURCE 60" },
     vol_up      = "VOL INC",
     vol_down    = "VOL DEC",
     vol_default = "VOL 100",
@@ -131,7 +131,7 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
     pwr_on      = { "PWR=01" },
     pwr_cooling = { "PWR=03" },
     pwr_warming = { "PWR=02" },
-    input       = { "SOURCE=30", "SOURCE=A0", "SOURCE=11", "SOURCE=21" },
+    input       = { "SOURCE=30", "SOURCE=A0", "SOURCE=C0", "SOURCE=80", "SOURCE=56", "SOURCE=60" },
     volume      = "VOL=",
     amute_off   = "MUTE=OFF",
     amute_on    = "MUTE=ON",
