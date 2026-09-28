@@ -2159,7 +2159,12 @@ local function BindUI()
     if t and t.String ~= "" then Control("PASSTHRU=" .. t.String) end
   end)
   Bind("Clear Logs", function(ctl)
-    if Pressed(ctl) then ClearLogs() end
+    if not Pressed(ctl) then return end
+    ClearLogs()
+    -- Momentary only. Do not leave the LED on.
+    SuppressUI = true
+    if ctl and ctl.Boolean ~= nil then ctl.Boolean = false end
+    SuppressUI = false
   end)
 
   -- raw command box, same language as the AMX virtual device
