@@ -40,7 +40,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.10"
+local VERSION       = "1.0.11"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -885,6 +885,24 @@ local function Pressed(ctl)
   if ctl.Boolean ~= nil then return ctl.Boolean == true end
   if ctl.Value ~= nil then return ctl.Value ~= 0 end
   return true
+end
+
+-- Mute / AV Mute / Freeze also show state on the same button.
+-- Once feedback has set Boolean true, the next press arrives as false
+-- and Pressed() would drop it — so MUTE OFF never went out.
+-- A momentary release follows the press within 0.35 s; ignore that edge.
+local latchArm = {}
+local function LatchedPress(ctl, key, isOn, onCmd, offCmd)
+  if SuppressUI then return end
+  if ctl and ctl.Boolean then
+    latchArm[key] = true
+    Timer.CallAfter(function() latchArm[key] = false end, 0.35)
+    Control(isOn and offCmd or onCmd)
+  elseif latchArm[key] then
+    return
+  elseif isOn then
+    Control(offCmd)
+  end
 end
 
 -- Real Epson needs ESC/VP.net. Crestron RMC3 Serial I/O farm: leave Handshake off.
@@ -2004,15 +2022,15 @@ local function BindUI()
   Bind("VolumeDefault", function(ctl) if Pressed(ctl) then Control("VOLUME=DEFAULT") end end)
 
   Bind("Mute", function(ctl)
-    if Pressed(ctl) then Control("MUTE=T") end
+    LatchedPress(ctl, "mute", Status.amute, "MUTE=1", "MUTE=0")
   end)
   Bind("MuteToggle", function(ctl) if Pressed(ctl) then Control("MUTE=T") end end)
   Bind("AVMute", function(ctl)
-    if Pressed(ctl) then Control("AV MUTE=T") end
+    LatchedPress(ctl, "av", Status.vmute, "AV MUTE=1", "AV MUTE=0")
   end)
   Bind("AVMuteToggle", function(ctl) if Pressed(ctl) then Control("AV MUTE=T") end end)
   Bind("Freeze", function(ctl)
-    if Pressed(ctl) then Control("FREEZE=T") end
+    LatchedPress(ctl, "freeze", Status.freeze, "FREEZE=1", "FREEZE=0")
   end)
   Bind("FreezeToggle", function(ctl) if Pressed(ctl) then Control("FREEZE=T") end end)
 
