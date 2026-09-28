@@ -112,8 +112,8 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
     vol_down    = "VOL DEC",
     vol_default = "VOL 100",
     vol         = "VOL ",
-    amute_on    = "",
-    amute_off   = "",
+    amute_on    = "MUTE ON",
+    amute_off   = "MUTE OFF",
     vmute_on    = "MUTE ON",
     vmute_off   = "MUTE OFF",
     freeze_on   = "FREEZE ON",
@@ -815,16 +815,17 @@ local function ApplyInputButtons()
   end
 end
 
--- Hide Mute / AV Mute / Freeze when this model has no command.
--- Epson MUTE and AV MUTE are the same string, so AV Mute is hidden.
+-- Hide a button only when that model's command string is empty.
+local function TxFilled(key)
+  if not Display or not Display.tx then return false end
+  local s = Display.tx[key]
+  return type(s) == "string" and s:match("%S") ~= nil
+end
+
 local function ApplyFeatureButtons()
-  local tx = Display and Display.tx or {}
-  local mute = tx.amute_on or ""
-  local av   = tx.vmute_on or ""
-  local frz  = tx.freeze_on or ""
-  local showMute = mute ~= ""
-  local showAv   = av ~= "" and av ~= mute
-  local showFrz  = frz ~= ""
+  local showMute = TxFilled("amute_on") or TxFilled("amute_off")
+  local showAv   = TxFilled("vmute_on") or TxFilled("vmute_off")
+  local showFrz  = TxFilled("freeze_on") or TxFilled("freeze_off")
   SetInvisible("Mute",         not showMute)
   SetInvisible("MuteToggle",   not showMute)
   SetInvisible("MuteFb",       not showMute)
@@ -1677,7 +1678,9 @@ function Control(cmd)
     return
   end
   if cmd == "MUTE?" then
-    if Display and Display.tx.q_amute ~= "" then Enqueue(Display.tx.q_amute) end
+    if TxFilled("amute_on") or TxFilled("amute_off") then
+      if Display.tx.q_amute ~= "" then Enqueue(Display.tx.q_amute) end
+    end
     return
   end
 
@@ -1702,8 +1705,10 @@ function Control(cmd)
     return
   end
   if cmd == "AV MUTE?" then
-    if Display and Display.tx.q_vmute ~= "" and Display.tx.q_vmute ~= Display.tx.q_amute then
-      Enqueue(Display.tx.q_vmute)
+    if (TxFilled("vmute_on") or TxFilled("vmute_off")) and Display.tx.q_vmute ~= "" then
+      if Display.tx.q_vmute ~= Display.tx.q_amute or not (TxFilled("amute_on") or TxFilled("amute_off")) then
+        Enqueue(Display.tx.q_vmute)
+      end
     end
     return
   end
@@ -1729,7 +1734,9 @@ function Control(cmd)
     return
   end
   if cmd == "FREEZE?" then
-    if Display and Display.tx.q_freeze ~= "" then Enqueue(Display.tx.q_freeze) end
+    if (TxFilled("freeze_on") or TxFilled("freeze_off")) and Display and Display.tx.q_freeze ~= "" then
+      Enqueue(Display.tx.q_freeze)
+    end
     return
   end
 
@@ -1860,8 +1867,7 @@ Tick.EventHandler = function()
           end
         end, POLL_INPUT_S)
         Timer.CallAfter(function()
-          if Polling and Status.pwr == PWR.ON and not Queue.inflight and #Queue.items == 0
-             and Display and Display.tx.q_vmute ~= "" and Display.tx.q_vmute ~= Display.tx.q_amute then
+          if Polling and Status.pwr == PWR.ON and not Queue.inflight and #Queue.items == 0 then
             Control("AV MUTE?")
           end
         end, POLL_MUTE_S)
