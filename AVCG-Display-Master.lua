@@ -99,7 +99,7 @@ end
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:NETWORK"] = {
   make = "EPSON", model = "GENERIC PROJECTOR",
-  input_label = { "INPUT 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
+  input_label = { "INPUT 1", "INPUT 2", "INPUT 3", "INPUT 4", "INPUT 5", "INPUT 6" },
   transport = MODE.IP, port = 3629, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "ESC/VP.net\x10\x03\x00\x00\x00\x00",
@@ -155,7 +155,6 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
 -- 2  EPSON GENERIC PROJECTOR  SERIAL
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:SERIAL"] = copy(Protocols["EPSON:PROJECTOR:NETWORK"])
-Protocols["EPSON:PROJECTOR:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
 Protocols["EPSON:PROJECTOR:SERIAL"].transport = MODE.SERIAL
 Protocols["EPSON:PROJECTOR:SERIAL"].init = ""
 Protocols["EPSON:PROJECTOR:SERIAL"].port = 0
