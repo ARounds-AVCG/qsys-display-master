@@ -40,7 +40,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.9"
+local VERSION       = "1.0.10"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -99,7 +99,7 @@ end
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:NETWORK"] = {
   make = "EPSON", model = "GENERIC PROJECTOR",
-  input_label = { "INPUT 1", "INPUT 2", "INPUT 3", "INPUT 4", "INPUT 5", "INPUT 6" },
+  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
   transport = MODE.IP, port = 3629, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "ESC/VP.net\x10\x03\x00\x00\x00\x00",
@@ -155,6 +155,7 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
 -- 2  EPSON GENERIC PROJECTOR  SERIAL
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:SERIAL"] = copy(Protocols["EPSON:PROJECTOR:NETWORK"])
+Protocols["EPSON:PROJECTOR:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
 Protocols["EPSON:PROJECTOR:SERIAL"].transport = MODE.SERIAL
 Protocols["EPSON:PROJECTOR:SERIAL"].init = ""
 Protocols["EPSON:PROJECTOR:SERIAL"].port = 0
@@ -812,6 +813,27 @@ local function ApplyInputButtons()
     SetInvisible("InputFb", hide, i)
     SetInvisible("InputLabel", hide, i)
   end
+end
+
+-- Hide Mute / AV Mute / Freeze when this model has no command.
+-- Epson MUTE and AV MUTE are the same string, so AV Mute is hidden.
+local function ApplyFeatureButtons()
+  local tx = Display and Display.tx or {}
+  local mute = tx.amute_on or ""
+  local av   = tx.vmute_on or ""
+  local frz  = tx.freeze_on or ""
+  local showMute = mute ~= ""
+  local showAv   = av ~= "" and av ~= mute
+  local showFrz  = frz ~= ""
+  SetInvisible("Mute",         not showMute)
+  SetInvisible("MuteToggle",   not showMute)
+  SetInvisible("MuteFb",       not showMute)
+  SetInvisible("AVMute",       not showAv)
+  SetInvisible("AVMuteToggle", not showAv)
+  SetInvisible("AVMuteFb",     not showAv)
+  SetInvisible("Freeze",       not showFrz)
+  SetInvisible("FreezeToggle", not showFrz)
+  SetInvisible("FreezeFb",     not showFrz)
 end
 
 local function SetValue(name, v, index)
@@ -1513,6 +1535,7 @@ local function ApplyModel(key)
     Timer.CallAfter(function() Control("REINIT") end, 1.0)
   end
   ApplyInputButtons()
+  ApplyFeatureButtons()
   PushFeedback()
   return true
 end
@@ -1679,7 +1702,9 @@ function Control(cmd)
     return
   end
   if cmd == "AV MUTE?" then
-    if Display and Display.tx.q_vmute ~= "" then Enqueue(Display.tx.q_vmute) end
+    if Display and Display.tx.q_vmute ~= "" and Display.tx.q_vmute ~= Display.tx.q_amute then
+      Enqueue(Display.tx.q_vmute)
+    end
     return
   end
 
@@ -1835,7 +1860,8 @@ Tick.EventHandler = function()
           end
         end, POLL_INPUT_S)
         Timer.CallAfter(function()
-          if Polling and Status.pwr == PWR.ON and not Queue.inflight and #Queue.items == 0 then
+          if Polling and Status.pwr == PWR.ON and not Queue.inflight and #Queue.items == 0
+             and Display and Display.tx.q_vmute ~= "" and Display.tx.q_vmute ~= Display.tx.q_amute then
             Control("AV MUTE?")
           end
         end, POLL_MUTE_S)
@@ -1874,6 +1900,7 @@ local function BindUI()
   SetLegend("PowerFb", "Warm/Cool", 3)
 
   ApplyInputButtons()
+  ApplyFeatureButtons()
 
   SetLegend("Volume", "Up", 1)
   SetLegend("Volume", "Down", 2)
