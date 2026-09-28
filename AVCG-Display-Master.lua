@@ -99,7 +99,7 @@ end
 --------------------------------------------------------------------------------
 Protocols["EPSON:PROJECTOR:NETWORK"] = {
   make = "EPSON", model = "GENERIC PROJECTOR",
-  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
+  input_label = { "INPUT 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
   transport = MODE.IP, port = 3629, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "ESC/VP.net\x10\x03\x00\x00\x00\x00",
