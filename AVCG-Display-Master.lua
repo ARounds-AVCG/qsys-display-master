@@ -40,7 +40,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.11"
+local VERSION       = "1.0.12"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -1266,12 +1266,16 @@ local function HandleRx(raw)
   end
 
   if rx.rxerror and rx.rxerror ~= "" and Contains(raw, rx.rxerror) then
-    Notify("DEVICE ERROR")
-    if Queue.retries < MAX_RETRIES and Queue.sent ~= "" then
-      Queue.retries = Queue.retries + 1
-      Enqueue(Queue.sent)
-    end
+    -- Projector rejected the command (:ERR, NG, ER401). Do not requeue it.
+    -- Queue.retries used to be cleared at the top of HandleRx, so the old
+    -- retry check was always true and SOURCE 11 looped until something else
+    -- landed in the queue.
+    local rejected = Queue.sent
+    Queue.sent = ""
+    Queue.inflight = false
+    Notify("DEVICE ERROR" .. (rejected ~= "" and (" (" .. rejected .. ")") or ""))
     PushFeedback()
+    ProcessQueue()
     return
   end
 
