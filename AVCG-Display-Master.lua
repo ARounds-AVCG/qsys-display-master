@@ -20,6 +20,7 @@
     NEC old LCD         network
     Barco projector     network
     Philips LCD         network (binary)
+    Samsung LCD         network / serial (MDC, ID 1, checksums hardcoded)
     PJLink generic      network
 
   Command surface (mirrors the AMX virtual device strings):
@@ -40,7 +41,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.12"
+local VERSION       = "1.0.14"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -630,6 +631,84 @@ Protocols["PHILIPS:LCD:NETWORK"] = {
 }
 
 --------------------------------------------------------------------------------
+-- 28  SAMSUNG LCD  NETWORK  (MDC, display ID hardcoded to 1)
+-- Packet is AA CMD 01 LEN DATA... CS. CS is already in each string
+-- (low byte of CMD+01+LEN+DATA). No checksum function.
+-- TCP 1515. Serial uses the same bytes, 9600 8N1, no CR.
+--------------------------------------------------------------------------------
+Protocols["SAMSUNG:LCD:NETWORK"] = {
+  make = "SAMSUNG", model = "GENERIC LCD",
+  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBASET", "URL", "DISPLAYPORT" },
+  transport = MODE.IP, port = 1515, connect = CONN.PERM,
+  baud = 9600, terminator = "", eol = "none",
+  init = "",
+  binary = true,
+  tx = {
+    pwr_on      = "\xAA\x11\x01\x01\x01\x14",
+    pwr_off     = "\xAA\x11\x01\x01\x00\x13",
+    input       = {
+      "\xAA\x14\x01\x01\x21\x37", -- HDMI1
+      "\xAA\x14\x01\x01\x23\x39", -- HDMI2
+      "\xAA\x14\x01\x01\x31\x47", -- HDMI3
+      "\xAA\x14\x01\x01\x55\x6B", -- HDBaseT
+      "\xAA\x14\x01\x01\x63\x79", -- URL launcher
+      "\xAA\x14\x01\x01\x25\x3B", -- DisplayPort
+    },
+    vol_up      = "",
+    vol_down    = "",
+    vol_default = "\xAA\x12\x01\x01\x14\x28", -- volume 20
+    vol         = "",
+    amute_on    = "\xAA\x13\x01\x01\x01\x16",
+    amute_off   = "\xAA\x13\x01\x01\x00\x15",
+    vmute_on    = "",
+    vmute_off   = "",
+    freeze_on   = "",
+    freeze_off  = "",
+    q_pwr       = "\xAA\x11\x01\x00\x12",
+    q_input     = "\xAA\x14\x01\x00\x15",
+    q_vol       = "\xAA\x12\x01\x00\x13",
+    q_amute     = "\xAA\x13\x01\x00\x14",
+    q_vmute     = "",
+    q_freeze    = "",
+    q_lamp      = "",
+  },
+  rx = {
+    pwr_off     = { "\x41\x11\x00" },
+    pwr_on      = { "\x41\x11\x01" },
+    pwr_cooling = {},
+    pwr_warming = {},
+    input       = {
+      "\x41\x14\x21",
+      "\x41\x14\x23",
+      "\x41\x14\x31",
+      "\x41\x14\x55",
+      "\x41\x14\x63",
+      "\x41\x14\x25",
+    },
+    volume      = "\x41\x12",
+    amute_off   = "\x41\x13\x00",
+    amute_on    = "\x41\x13\x01",
+    vmute_off   = "",
+    vmute_on    = "",
+    freeze_off  = "",
+    freeze_on   = "",
+    ack         = "",
+    rxerror     = "\xFF\x01\x03\x4E",
+  },
+  vol_fmt = function(n)
+    if n < 0 then n = 0 end
+    if n > 100 then n = 100 end
+    local cs = (0x12 + 0x01 + 0x01 + n) % 256
+    return string.char(0xAA, 0x12, 0x01, 0x01, n, cs)
+  end,
+}
+
+Protocols["SAMSUNG:LCD:SERIAL"] = copy(Protocols["SAMSUNG:LCD:NETWORK"])
+Protocols["SAMSUNG:LCD:SERIAL"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBASET", "URL", "DISPLAYPORT" }
+Protocols["SAMSUNG:LCD:SERIAL"].transport = MODE.SERIAL
+Protocols["SAMSUNG:LCD:SERIAL"].port = 0
+
+--------------------------------------------------------------------------------
 -- 30  PJLINK GENERIC  NETWORK
 --------------------------------------------------------------------------------
 Protocols["PJLINK:GENERIC:NETWORK"] = {
@@ -945,6 +1024,14 @@ local function Debug(msg)
     print(string.format("[%s][DBG] %s", MODULE_NAME, msg))
     SetString("DebugText", msg)
   end
+end
+
+local function ClearLogs()
+  SetString("EventLog", "")
+  SetString("TxLog", "")
+  SetString("RxLog", "")
+  SetString("DebugText", "")
+  print(string.format("[%s] logs cleared", MODULE_NAME))
 end
 
 --------------------------------------------------------------------------------
@@ -1330,7 +1417,13 @@ local function HandleRx(raw)
 
   -- Volume (query response)
   if Display.tx.q_vol ~= "" and last == Display.tx.q_vol then
-    local num = raw:match("(%-?%d+)")
+    local num
+    if Display.binary then
+      local i = raw:find("\x41\x12", 1, true)
+      if i and i + 2 <= #raw then num = tostring(raw:byte(i + 2)) end
+    else
+      num = raw:match("(%-?%d+)")
+    end
     if num then
       Status.volume = tonumber(num) or Status.volume
       Notify("VOLUME=" .. Status.volume)
@@ -1645,12 +1738,22 @@ function Control(cmd)
   end
 
   if cmd:find("VOLUME=UP", 1, true) then
-    if Display and Display.tx.vol_up ~= "" then Enqueue(Display.tx.vol_up, true) end
+    if Display and Display.tx.vol_up ~= "" then
+      Enqueue(Display.tx.vol_up, true)
+    elseif Display and Display.vol_fmt then
+      Status.volume = math.min(100, (Status.volume or 0) + 1)
+      Enqueue(Display.vol_fmt(Status.volume), true)
+    end
     Status.amute = false
     return
   end
   if cmd:find("VOLUME=DOWN", 1, true) then
-    if Display and Display.tx.vol_down ~= "" then Enqueue(Display.tx.vol_down, true) end
+    if Display and Display.tx.vol_down ~= "" then
+      Enqueue(Display.tx.vol_down, true)
+    elseif Display and Display.vol_fmt then
+      Status.volume = math.max(0, (Status.volume or 0) - 1)
+      Enqueue(Display.vol_fmt(Status.volume), true)
+    end
     Status.amute = false
     return
   end
@@ -1951,6 +2054,7 @@ local function BindUI()
   SetLegend("Handshake", "Handshake")
   SetLegend("SendCommand", "Send")
   SetLegend("SendPassthru", "Passthru")
+  SetLegend("Clear Logs", "Clear Logs")
 
   -- Model combo
   local m = C("Model")
@@ -2053,6 +2157,9 @@ local function BindUI()
     if not Pressed(ctl) then return end
     local t = C("Passthru")
     if t and t.String ~= "" then Control("PASSTHRU=" .. t.String) end
+  end)
+  Bind("Clear Logs", function(ctl)
+    if Pressed(ctl) then ClearLogs() end
   end)
 
   -- raw command box, same language as the AMX virtual device
