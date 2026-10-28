@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.18"
+local VERSION       = "1.0.19"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -746,6 +746,8 @@ local Status = {
   input         = 0,
   input_str     = "",
   input_request = "",
+  input_tries   = 0,
+  power_on_at   = 0,
   last_cmd      = "",
   lamp          = "",
   comms_ok      = false,
@@ -991,9 +993,12 @@ local function Notify(msg)
   SetString("Status", msg)
   local log = C("EventLog")
   if log then
-    local cur = log.String or ""
-    if #cur > 4000 then cur = cur:sub(-3000) end
-    log.String = cur .. os.date("%H:%M:%S ") .. msg .. "\n"
+    -- Text controls have no scroll-to-end. Newest line goes at the top
+    -- so it stays on screen without the user dragging the log.
+    local line = os.date("%H:%M:%S ") .. msg .. "\n"
+    local cur = line .. (log.String or "")
+    if #cur > 4000 then cur = cur:sub(1, 4000) end
+    log.String = cur
   end
 end
 
@@ -1294,14 +1299,28 @@ local function AnyContains(hay, list)
   return false
 end
 
--- Input pressed while the set is off. Sent when power actually reports ON,
--- not on a fixed timer (Samsung ignores a source command during warm-up).
+-- Input pressed while the set is off. Samsung ACKs power-on immediately
+-- (the ACK echoes 0x01) and then NAKs a source change until it has
+-- actually finished booting, often dropping the socket on the way.
+-- Hold input_request until a power QUERY says ON, and retry a NAK.
 local function SendPendingInput()
   local n = tonumber(Status.input_request or "")
   if not n or not Display or not Display.tx or not Display.tx.input then return end
   local tx = Display.tx.input[n]
-  Status.input_request = ""
-  if not tx or tx == "" then return end
+  if not tx or tx == "" then
+    Status.input_request = ""
+    return
+  end
+  if (Status.input_tries or 0) >= 8 then
+    Notify("INPUT " .. n .. " failed")
+    Status.input_request = ""
+    return
+  end
+  if Queue.inflight and Queue.sent == tx then return end
+  for _, c in ipairs(Queue.items) do
+    if c == tx then return end
+  end
+  Status.input_tries = (Status.input_tries or 0) + 1
   Enqueue(tx, true)
   QueryAfter("INPUT?", POLL_AFTER_CMD_S)
 end
@@ -1351,6 +1370,21 @@ local function HandleRx(raw)
     Queue.sent = ""
     Queue.inflight = false
     Notify("DEVICE ERROR" .. (rejected ~= "" and (" (" .. HexDump(rejected) .. ")") or ""))
+    -- Samsung NAKs a source change while it is still booting (4E), then
+    -- often drops the socket. Keep the request and try again. A bad source
+    -- on an already-on projector (Epson :ERR) is not retried.
+    local n = tonumber(Status.input_request or "")
+    local pending = n and Display.tx.input and Display.tx.input[n]
+    local booting = (Now() - (Status.power_on_at or 0)) < 120
+    -- Only retry a source NAK while a panel is still coming up (Samsung 4E).
+    -- Do not retry a text :ERR / NG — that is a source the set will not accept.
+    if pending and pending ~= "" and rejected == pending and Display.binary and booting then
+      Timer.CallAfter(function()
+        if Status.input_request == tostring(n) then SendPendingInput() end
+      end, 5)
+    elseif pending and rejected == pending then
+      Status.input_request = ""
+    end
     PushFeedback()
     ProcessQueue()
     return
@@ -1383,10 +1417,20 @@ local function HandleRx(raw)
     Status.amute = false
     Notify("POWER=0")
   elseif AnyContains(raw, rx.pwr_on) then
-    local becameOn = (Status.pwr ~= PWR.ON)
-    Status.pwr = PWR.ON
-    Notify("POWER=1")
-    if becameOn then SendPendingInput() end
+    -- Samsung's power-on ACK echoes 0x01, same bytes as a real ON status.
+    -- Sending the source on that ACK is what got NAK'd (4E) at 10:28:20.
+    local setAck = Display.tx.pwr_on ~= "" and last == Display.tx.pwr_on
+    if setAck and Status.pwr ~= PWR.ON then
+      Status.pwr = PWR.WARMING
+      Notify("POWER=2")
+    else
+      local becameOn = (Status.pwr ~= PWR.ON)
+      Status.pwr = PWR.ON
+      Notify("POWER=1")
+      if becameOn or (Status.input_request or "") ~= "" then
+        SendPendingInput()
+      end
+    end
   elseif AnyContains(raw, rx.pwr_warming) then
     Status.pwr = PWR.WARMING
     Notify("POWER=2")
@@ -1402,6 +1446,10 @@ local function HandleRx(raw)
         Status.input = i
         Status.input_str = "INPUT=" .. i
         Notify(Status.input_str)
+        if Status.input_request == tostring(i) then
+          Status.input_request = ""
+          Status.input_tries = 0
+        end
         break
       end
     end
@@ -1545,6 +1593,11 @@ Tcp.EventHandler = function(sock, evt, err)
     Status.comms_ok = true
     Notify("CONNECTED " .. Client.address .. ":" .. tostring(Client.port))
     PushFeedback()
+    if (Status.input_request or "") ~= "" then
+      Timer.CallAfter(function()
+        if Display and (Status.input_request or "") ~= "" then Control("POWER?") end
+      end, 1.0)
+    end
     if Display and Display.init and Display.init ~= "" and HandshakeOn() then
       Debug("INIT handshake")
       ReadyToSend = false
@@ -1675,6 +1728,7 @@ local function Power(cmd)
   if cmd == "POWER=1" then
     if Status.pwr == PWR.OFF or Status.pwr == PWR.FAIL then
       Status.pwr = PWR.WARMING
+      Status.power_on_at = Now()
       Enqueue(Display.tx.pwr_on, true)
       Notify("POWER=2")
     elseif Status.pwr == PWR.COOLING then
@@ -1727,15 +1781,9 @@ function Control(cmd)
       if tx and tx ~= "" then
         Power("POWER=1")
         Status.input_request = tostring(n)
+        Status.input_tries = 0
         if Status.pwr == PWR.ON then
           SendPendingInput()
-        else
-          -- If the ON reply is missed, try once more once status is on.
-          Timer.CallAfter(function()
-            if Status.input_request == tostring(n) and Status.pwr == PWR.ON then
-              SendPendingInput()
-            end
-          end, 20)
         end
       end
     end
