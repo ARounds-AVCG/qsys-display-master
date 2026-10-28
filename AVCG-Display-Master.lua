@@ -1,3 +1,5 @@
+--[[
+================================================================================
 AVCG Display Master  —  Q-SYS Lua Control Script
   Ported from: AVCG-Display Master v0_1  (AMX / NetLinx)
   Original author : A.Rounds  —  AV Control Group
