@@ -1,47 +1,11 @@
---[[
-================================================================================
-AVCG Display Master  —  Q-SYS Lua Control Script
-  Ported from: AVCG-Display Master v0_1  (AMX / NetLinx)
-  Original author : A.Rounds  —  AV Control Group
-  Q-SYS port      : 2026-09-07
-
-  Drop this entire file into a Q-SYS Control Script (or Text Controller)
-  component. Create the controls listed in AVCG-Display-Master-README.md.
-  Missing controls are ignored; the script will not throw.
-
-  Supported families (from the original AMX DISPS[] table, plus PJLink):
-    EPSON projector     network / serial
-    LG LCD              network / serial
-    Panasonic projector network
-    Panasonic LCD       network
-    Sony projector      network
-    Sony LCD            network / serial
-    NEC projector/LCD   network / serial
-    NEC old LCD         network
-    Barco projector     network
-    Philips LCD         network (binary)
-    Samsung LCD         network / serial (MDC, ID 1, checksums hardcoded)
-    PJLink generic      network
-
-  Command surface (mirrors the AMX virtual device strings):
-    POWER=1 / POWER=0 / POWER? / POWER=T
-    INPUT=n / INPUT?
-    VOLUME=n / VOLUME=UP / VOLUME=DOWN / VOLUME=DEFAULT / VOLUME?
-    MUTE=0 / MUTE=1 / MUTE=T / MUTE?
-    AV MUTE=0 / AV MUTE=1 / AV MUTE=T / AV MUTE?
-    FREEZE=0 / FREEZE=1 / FREEZE=T / FREEZE?
-    DISPLAY=<description>
-    IP=x.x.x.x   IP PORT=n
-    CONNECT / DISCONNECT / REINIT / SET BAUD
-    PASSTHRU=<raw>
-    POLLING=0|1   DEBUG=0|1
-================================================================================
-]]
+-- AVCG Display Master. Q-SYS port of the AMX module. A.Rounds, AV Control Group.
+-- Do not start this file with a --[[ block comment. A download that loses
+-- that opener is parsed as code and fails: syntax error near 'Display'.
 
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.16"
+local VERSION       = "1.0.17"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
