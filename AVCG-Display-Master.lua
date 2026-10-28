@@ -1,6 +1,4 @@
---[[
-================================================================================
-  AVCG Display Master  —  Q-SYS Lua Control Script
+AVCG Display Master  —  Q-SYS Lua Control Script
   Ported from: AVCG-Display Master v0_1  (AMX / NetLinx)
   Original author : A.Rounds  —  AV Control Group
   Q-SYS port      : 2026-09-07
@@ -41,7 +39,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.15"
+local VERSION       = "1.0.16"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -527,7 +525,8 @@ Protocols["BARCO:PROJECTOR:NETWORK"] = {
   make = "BARCO", model = "GENERIC PROJECTOR",
   input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
   transport = MODE.IP, port = 3023, connect = CONN.TEMP,
-  baud = 115200, terminator = "\r", eol = "cr",
+  baud = 115200, terminator = "\r", eol = "none",
+  rx_delim = "]",
   init = "",
   tx = {
     pwr_on      = "[POWR1]",
@@ -1524,6 +1523,28 @@ local function DrainText(sock_or_port, eol_enum, custom)
   end
 end
 
+
+local RxHold = ""
+
+-- Barco G62 replies [POWR!01] with no CR/LF. rx_delim cuts each frame on "]".
+local function FeedRx(chunk)
+  if not chunk or chunk == "" then return end
+  local delim = Display and Display.rx_delim
+  if not delim or delim == "" then
+    HandleRx(chunk)
+    return
+  end
+  RxHold = RxHold .. chunk
+  while true do
+    local i = RxHold:find(delim, 1, true)
+    if not i then break end
+    local frame = RxHold:sub(1, i)
+    RxHold = RxHold:sub(i + 1)
+    if frame ~= "" then HandleRx(frame) end
+  end
+  if #RxHold > 1024 then RxHold = "" end
+end
+
 local function EolFor(obj)
   -- obj is TcpSocket or SerialPorts
   local kind = (Display and Display.eol) or "any"
@@ -1563,7 +1584,7 @@ Tcp.EventHandler = function(sock, evt, err)
     local e, custom = EolFor(Tcp)
     if not e then
       local chunk = sock:Read(sock.BufferLength)
-      if chunk then HandleRx(chunk) end
+      if chunk then FeedRx(chunk) end
     else
       DrainText(sock, e, custom)
     end
@@ -1571,6 +1592,7 @@ Tcp.EventHandler = function(sock, evt, err)
   elseif evt == TcpSocket.Events.Closed then
     Client.status = "disconnected"
     Queue.inflight = false
+    RxHold = ""
     Notify("SOCKET CLOSED BY REMOTE")
     PushFeedback()
     if Display and Display.connect == CONN.PERM then
@@ -1615,7 +1637,7 @@ do
         local e, custom = EolFor(port)
         if not e then
           local chunk = port:Read(port.BufferLength)
-          if chunk then HandleRx(chunk) end
+          if chunk then FeedRx(chunk) end
         else
           DrainText(port, e, custom)
         end
