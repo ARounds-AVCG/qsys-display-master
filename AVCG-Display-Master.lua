@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.20"
+local VERSION       = "1.0.21"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -42,7 +42,10 @@ end
 -- terminator  = string appended on TX
 -- eol         = "cr" | "lf" | "crlf" | "none" | "any"
 -- init        = bytes sent once on TCP connect (Epson ESC/VP.net etc.)
--- vol_fmt     = optional function(level) -> tx string
+-- vol_fmt     = optional function(nativeLevel) -> tx string
+-- vol_min     = device volume minimum (VolumeLevel 0%)
+-- vol_max     = device volume maximum (VolumeLevel 100%, not snapped)
+-- vol_step    = snap intermediate levels to this device step
 --------------------------------------------------------------------------------
 local Protocols = {}
 
@@ -69,6 +72,7 @@ Protocols["EPSON:PROJECTOR:NETWORK"] = {
   baud = 9600, terminator = "\r", eol = "cr",
   init = "ESC/VP.net\x10\x03\x00\x00\x00\x00",
   password = "",
+  vol_min = 0, vol_max = 243, vol_step = 20,
   tx = {
     pwr_on      = "PWR ON",
     pwr_off     = "PWR OFF",
@@ -133,6 +137,7 @@ Protocols["LG:LCD:NETWORK"] = {
   transport = MODE.IP, port = 9761, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "ka 01 01",
     pwr_off     = "ka 01 00",
@@ -197,6 +202,7 @@ Protocols["PANASONIC:PROJECTOR:NETWORK"] = {
   transport = MODE.IP, port = 1024, connect = CONN.PERM,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "00PON",
     pwr_off     = "00POF",
@@ -257,6 +263,7 @@ Protocols["SONY:PROJECTOR:NETWORK"] = {
   transport = MODE.IP, port = 53595, connect = CONN.TEMP,
   baud = 38400, terminator = "\n", eol = "lf",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = 'power "on"',
     pwr_off     = 'power "off"',
@@ -306,6 +313,7 @@ Protocols["SONY:LCD:NETWORK"] = {
   transport = MODE.IP, port = 20060, connect = CONN.TEMP,
   baud = 9600, terminator = "\n", eol = "lf",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "*SCPOWR0000000000000001",
     pwr_off     = "*SCPOWR0000000000000000",
@@ -376,6 +384,7 @@ Protocols["NEC:PROJECTOR:NETWORK"] = {
   transport = MODE.IP, port = 7142, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "power on",
     pwr_off     = "power off",
@@ -444,6 +453,7 @@ Protocols["NEC:OLD LCD:NETWORK"] = {
   transport = MODE.IP, port = 7142, connect = CONN.TEMP,
   baud = 9600, terminator = "\r", eol = "cr",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = '00"',
     pwr_off     = "00!",
@@ -494,6 +504,7 @@ Protocols["BARCO:PROJECTOR:NETWORK"] = {
   baud = 115200, terminator = "\r", eol = "none",
   rx_delim = "]",
   init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "[POWR1]",
     pwr_off     = "[POWR0]",
@@ -544,6 +555,7 @@ Protocols["PHILIPS:LCD:NETWORK"] = {
   baud = 9600, terminator = "", eol = "none",
   init = "",
   binary = true,
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "\x06\x01\x00\x18\x02\x1D",
     pwr_off     = "\x06\x01\x00\x18\x01\x1E",
@@ -608,6 +620,7 @@ Protocols["SAMSUNG:LCD:NETWORK"] = {
   baud = 9600, terminator = "", eol = "none",
   init = "",
   binary = true,
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "\xAA\x11\x01\x01\x01\x14",
     pwr_off     = "\xAA\x11\x01\x01\x00\x13",
@@ -683,6 +696,7 @@ Protocols["PJLINK:GENERIC:NETWORK"] = {
   baud = 9600, terminator = "\r", eol = "cr",
   init = "",
   pjlink = true,
+  vol_min = 0, vol_max = 100, vol_step = 1,
   tx = {
     pwr_on      = "%1POWR 1",
     pwr_off     = "%1POWR 0",
@@ -751,6 +765,7 @@ local Status = {
   last_cmd      = "",
   lamp          = "",
   comms_ok      = false,
+  volume_native = nil,     -- last device level sent or reported
 }
 
 local Client = {
@@ -871,6 +886,46 @@ local function HasAbsVolume()
   if not Display then return false end
   if Display.vol_fmt then return true end
   return TxFilled("vol")
+end
+
+-- VolumeLevel is always 0-100. Each library stores the device range.
+-- 0% is vol_min, 100% is vol_max exactly (Epson 243 is not snapped to 240).
+-- Values in between snap to vol_step, then clamp.
+local function VolRange()
+  local vmin, vmax, step = 0, 100, 1
+  if Display then
+    if Display.vol_min ~= nil then vmin = Display.vol_min end
+    if Display.vol_max ~= nil then vmax = Display.vol_max end
+    if Display.vol_step ~= nil then step = Display.vol_step end
+  end
+  if step < 1 then step = 1 end
+  if vmax < vmin then vmax = vmin end
+  return vmin, vmax, step
+end
+
+local function PercentToNative(pct)
+  local vmin, vmax, step = VolRange()
+  pct = tonumber(pct) or 0
+  if pct <= 0 then return vmin end
+  if pct >= 100 then return vmax end
+  local raw = vmin + (pct / 100) * (vmax - vmin)
+  local steps = math.floor((raw - vmin) / step + 0.5)
+  local native = vmin + steps * step
+  if native > vmax then native = vmax end
+  if native < vmin then native = vmin end
+  return native
+end
+
+local function NativeToPercent(native)
+  local vmin, vmax = VolRange()
+  native = tonumber(native) or vmin
+  if vmax == vmin then return 0 end
+  if native < vmin then native = vmin end
+  if native > vmax then native = vmax end
+  local pct = math.floor(((native - vmin) / (vmax - vmin)) * 100 + 0.5)
+  if pct < 0 then pct = 0 end
+  if pct > 100 then pct = 100 end
+  return pct
 end
 
 local function ApplyFeatureButtons()
@@ -1476,11 +1531,19 @@ local function HandleRx(raw)
       num = raw:match("(%-?%d+)")
     end
     if num then
-      Status.volume = tonumber(num) or Status.volume
-      Notify("VOLUME=" .. Status.volume)
-      if Status.volume == 0 then
-        Status.amute = true
-        Notify("MUTE=1")
+      local native = tonumber(num)
+      if native then
+        -- Keep the percent the user just set when the reply is that same
+        -- device level, so Epson 50% (native 120) does not snap the fader to 49.
+        if Status.volume_native == nil or native ~= Status.volume_native then
+          Status.volume = NativeToPercent(native)
+          Status.volume_native = native
+        end
+        Notify("VOLUME=" .. tostring(Status.volume))
+        if Status.volume == 0 then
+          Status.amute = true
+          Notify("MUTE=1")
+        end
       end
     end
   end
@@ -1708,6 +1771,7 @@ local function ApplyModel(key)
   end
   DisplayKey = key
   Display = proto
+  Status.volume_native = nil
   Client.port = proto.port
   Client.connect_type = proto.connect
   SetString("Model", key)
@@ -1814,7 +1878,9 @@ function Control(cmd)
       Enqueue(Display.tx.vol_up, true)
     elseif Display and Display.vol_fmt then
       Status.volume = math.min(100, (Status.volume or 0) + 1)
-      Enqueue(Display.vol_fmt(Status.volume), true)
+      local native = PercentToNative(Status.volume)
+      Status.volume_native = native
+      Enqueue(Display.vol_fmt(native), true)
     end
     Status.amute = false
     return
@@ -1824,7 +1890,9 @@ function Control(cmd)
       Enqueue(Display.tx.vol_down, true)
     elseif Display and Display.vol_fmt then
       Status.volume = math.max(0, (Status.volume or 0) - 1)
-      Enqueue(Display.vol_fmt(Status.volume), true)
+      local native = PercentToNative(Status.volume)
+      Status.volume_native = native
+      Enqueue(Display.vol_fmt(native), true)
     end
     Status.amute = false
     return
@@ -1836,13 +1904,17 @@ function Control(cmd)
   end
   if cmd:find("VOLUME=", 1, true) == 1 then
     local n = tonumber(cmd:match("VOLUME=(%-?%d+)")) or 0
+    if n < 0 then n = 0 end
+    if n > 100 then n = 100 end
     Status.volume = n
     if Display then
+      local native = PercentToNative(n)
+      Status.volume_native = native
       if Display.vol_fmt then
-        Enqueue(Display.vol_fmt(n), true)
+        Enqueue(Display.vol_fmt(native), true)
       elseif Display.tx.vol ~= "" then
-        if n < 10 then Enqueue(Display.tx.vol .. "0" .. tostring(n), true)
-        else Enqueue(Display.tx.vol .. tostring(n), true) end
+        if native < 10 then Enqueue(Display.tx.vol .. "0" .. tostring(native), true)
+        else Enqueue(Display.tx.vol .. tostring(native), true) end
       end
     end
     Status.amute = (n == 0)
@@ -2200,7 +2272,7 @@ local function BindUI()
   Bind("VolumeDown",    function(ctl) if Pressed(ctl) then Control("VOLUME=DOWN") end end)
   Bind("VolumeDefault", function(ctl) if Pressed(ctl) then Control("VOLUME=DEFAULT") end end)
 
-  -- Fader/knob, range 0-100. Name the control VolumeLevel.
+  -- Fader/knob, always 0-100. Name it VolumeLevel. Scaled into vol_min..vol_max.
   -- VolumeSlider is accepted too. Dragging sends one level when it settles.
   local function BindLevel(name)
     Bind(name, function(ctl)
