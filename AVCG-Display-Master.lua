@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.22"
+local VERSION       = "1.0.23"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -253,6 +253,15 @@ Protocols["PANASONIC:PROJECTOR:NETWORK"] = {
 Protocols["PANASONIC:LCD:NETWORK"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
 Protocols["PANASONIC:LCD:NETWORK"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
 Protocols["PANASONIC:LCD:NETWORK"].model = "GENERIC LCD"
+
+--------------------------------------------------------------------------------
+-- PANASONIC GENERIC PROJECTOR  SERIAL
+-- Same command set as the network protocol. 9600 8N1, CR.
+--------------------------------------------------------------------------------
+Protocols["PANASONIC:PROJECTOR:SERIAL"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
+Protocols["PANASONIC:PROJECTOR:SERIAL"].transport = MODE.SERIAL
+Protocols["PANASONIC:PROJECTOR:SERIAL"].init = ""
+Protocols["PANASONIC:PROJECTOR:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
 -- SONY PROJECTOR  NETWORK  (ADCP / SDAP style ASCII, LF)
