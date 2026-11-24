@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.23"
+local VERSION       = "1.0.24"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -195,6 +195,7 @@ Protocols["LG:LCD:SERIAL"].port = 0
 
 --------------------------------------------------------------------------------
 -- PANASONIC GENERIC PROJECTOR  NETWORK
+-- Protocol 2 (ID 00). Ethernet port 1024, command + CR. No STX/ETX.
 --------------------------------------------------------------------------------
 Protocols["PANASONIC:PROJECTOR:NETWORK"] = {
   make = "PANASONIC", model = "GENERIC PROJECTOR",
@@ -254,14 +255,81 @@ Protocols["PANASONIC:LCD:NETWORK"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK
 Protocols["PANASONIC:LCD:NETWORK"].input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" }
 Protocols["PANASONIC:LCD:NETWORK"].model = "GENERIC LCD"
 
+-- Protocol 2 serial is the same command body as network, framed STX..ETX
+-- and no CR: \x0200PON\x03. Protocol 1 (STX) has no ID: \x02PON\x03.
+-- Ethernet protocol 1 is that frame plus CR, port 1024.
+local function PanaStripId(proto)
+  local function strip(s)
+    if type(s) == "string" and s:sub(1, 2) == "00" then return s:sub(3) end
+    return s
+  end
+  for k, v in pairs(proto.tx) do
+    if type(v) == "string" then
+      proto.tx[k] = strip(v)
+    elseif type(v) == "table" then
+      for i, s in ipairs(v) do v[i] = strip(s) end
+    end
+  end
+  if proto.vol_fmt then
+    local base = proto.vol_fmt
+    proto.vol_fmt = function(n)
+      return strip(base(n))
+    end
+  end
+end
+
+local function PanaStxEtx(proto, keepCr)
+  if not keepCr then
+    proto.terminator = ""
+    proto.eol = "none"
+    proto.rx_delim = "\x03"
+  end
+  local function wrap(s)
+    if type(s) ~= "string" or s == "" or s:sub(1, 1) == "\x02" then return s end
+    return "\x02" .. s .. "\x03"
+  end
+  for k, v in pairs(proto.tx) do
+    if type(v) == "string" then
+      proto.tx[k] = wrap(v)
+    elseif type(v) == "table" then
+      for i, s in ipairs(v) do v[i] = wrap(s) end
+    end
+  end
+  if proto.vol_fmt then
+    local base = proto.vol_fmt
+    proto.vol_fmt = function(n)
+      return wrap(base(n))
+    end
+  end
+end
+
 --------------------------------------------------------------------------------
 -- PANASONIC GENERIC PROJECTOR  SERIAL
--- Same command set as the network protocol. 9600 8N1, CR.
+-- Protocol 2. 9600 8N1. STX + 00 command + ETX, no CR.
 --------------------------------------------------------------------------------
 Protocols["PANASONIC:PROJECTOR:SERIAL"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
 Protocols["PANASONIC:PROJECTOR:SERIAL"].transport = MODE.SERIAL
 Protocols["PANASONIC:PROJECTOR:SERIAL"].init = ""
 Protocols["PANASONIC:PROJECTOR:SERIAL"].port = 0
+PanaStxEtx(Protocols["PANASONIC:PROJECTOR:SERIAL"], false)
+
+--------------------------------------------------------------------------------
+-- PANASONIC PROJECTOR STX  (protocol 1, no ID)
+-- Ethernet: STX command ETX CR, port 1024.
+-- Serial:   STX command ETX, 9600 8N1, no CR.
+--------------------------------------------------------------------------------
+Protocols["PANASONIC:PROJECTOR STX:NETWORK"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
+Protocols["PANASONIC:PROJECTOR STX:NETWORK"].model = "PROJECTOR STX"
+PanaStripId(Protocols["PANASONIC:PROJECTOR STX:NETWORK"])
+PanaStxEtx(Protocols["PANASONIC:PROJECTOR STX:NETWORK"], true)
+Protocols["PANASONIC:PROJECTOR STX:NETWORK"].rx.pwr_off = { "00000", "\x02OFF\x03" }
+Protocols["PANASONIC:PROJECTOR STX:NETWORK"].rx.pwr_on  = { "00001", "\x02ON\x03" }
+
+Protocols["PANASONIC:PROJECTOR STX:SERIAL"] = copy(Protocols["PANASONIC:PROJECTOR STX:NETWORK"])
+Protocols["PANASONIC:PROJECTOR STX:SERIAL"].transport = MODE.SERIAL
+Protocols["PANASONIC:PROJECTOR STX:SERIAL"].init = ""
+Protocols["PANASONIC:PROJECTOR STX:SERIAL"].port = 0
+PanaStxEtx(Protocols["PANASONIC:PROJECTOR STX:SERIAL"], false)
 
 --------------------------------------------------------------------------------
 -- SONY PROJECTOR  NETWORK  (ADCP / SDAP style ASCII, LF)
