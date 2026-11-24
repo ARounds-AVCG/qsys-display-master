@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.24"
+local VERSION       = "1.0.25"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -574,12 +574,13 @@ Protocols["NEC:OLD LCD:NETWORK"] = {
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
--- NEC LCD EXX7  SERIAL  (E657Q / Exx7 external control, Monitor ID = 1)
--- 9600 8N1, null-modem. Full SOH/STX/BCC/CR frames. binary = true.
--- Commands from NEC E657Q / External Control Exx7 manual.
+-- NEC EXX7 LCD SERIAL  (E657Q / Exx7 external control protocol)
+-- Completely independent entry. 9600 8N1, null-modem cable.
+-- Full SOH + header + STX + message + ETX + BCC + CR frames.
+-- Monitor ID = 1. Commands from NEC External Control Exx7 / E657Q manual.
 --------------------------------------------------------------------------------
-Protocols["NEC:LCD:EXX7"] = {
-  make = "NEC", model = "LCD EXX7",
+Protocols["NEC EXX7:LCD:SERIAL"] = {
+  make = "NEC", model = "EXX7 LCD",
   input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "VGA", "COMPONENT", "AV" },
   transport = MODE.SERIAL, port = 0, connect = CONN.PERM,
   baud = 9600, terminator = "", eol = "none",
@@ -590,11 +591,11 @@ Protocols["NEC:LCD:EXX7"] = {
     pwr_on      = "\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x31\x03\x73\x0d",
     pwr_off     = "\x01\x30\x41\x30\x41\x30\x43\x02\x43\x32\x30\x33\x44\x36\x30\x30\x30\x34\x03\x76\x0d",
     input       = {
-      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x31\x31\x03\x72\x0d", -- HDMI-1
-      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x31\x32\x03\x71\x0d", -- HDMI-2
-      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x38\x32\x03\x70\x0d", -- HDMI-3
+      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x31\x31\x03\x72\x0d", -- HDMI 1
+      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x31\x32\x03\x71\x0d", -- HDMI 2
+      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x38\x32\x03\x70\x0d", -- HDMI 3
       "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x30\x31\x03\x73\x0d", -- VGA
-      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x30\x43\x03\x01\x0d", -- Component
+      "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x30\x43\x03\x01\x0d", -- COMPONENT
       "\x01\x30\x41\x30\x45\x30\x41\x02\x30\x30\x36\x30\x30\x30\x30\x35\x03\x77\x0d", -- AV
     },
     vol_up      = "",
