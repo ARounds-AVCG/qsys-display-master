@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.25"
+local VERSION       = "1.0.26"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -314,24 +314,126 @@ Protocols["PANASONIC:PROJECTOR:SERIAL"].port = 0
 PanaStxEtx(Protocols["PANASONIC:PROJECTOR:SERIAL"], false)
 
 --------------------------------------------------------------------------------
--- PANASONIC PROJECTOR STX  (protocol 1, no ID)
--- Ethernet: STX command ETX CR, port 1024.
--- Serial:   STX command ETX, 9600 8N1, no CR.
 --------------------------------------------------------------------------------
-Protocols["PANASONIC:PROJECTOR STX:NETWORK"] = copy(Protocols["PANASONIC:PROJECTOR:NETWORK"])
-Protocols["PANASONIC:PROJECTOR STX:NETWORK"].model = "PROJECTOR STX"
-PanaStripId(Protocols["PANASONIC:PROJECTOR STX:NETWORK"])
-PanaStxEtx(Protocols["PANASONIC:PROJECTOR STX:NETWORK"], true)
-Protocols["PANASONIC:PROJECTOR STX:NETWORK"].rx.pwr_off = { "00000", "\x02OFF\x03" }
-Protocols["PANASONIC:PROJECTOR STX:NETWORK"].rx.pwr_on  = { "00001", "\x02ON\x03" }
-
-Protocols["PANASONIC:PROJECTOR STX:SERIAL"] = copy(Protocols["PANASONIC:PROJECTOR STX:NETWORK"])
-Protocols["PANASONIC:PROJECTOR STX:SERIAL"].transport = MODE.SERIAL
-Protocols["PANASONIC:PROJECTOR STX:SERIAL"].init = ""
-Protocols["PANASONIC:PROJECTOR STX:SERIAL"].port = 0
-PanaStxEtx(Protocols["PANASONIC:PROJECTOR STX:SERIAL"], false)
-
+-- PANASONIC PROJECTOR STX  (Protocol 1, no ID)
+-- Independent definition — not derived from Protocol 2.
+-- Framing: STX (0x02) + command + ETX (0x03)
+-- Serial: no CR.  Network (port 1024): + CR.
+-- 9600 8N1. Typical older / Protocol 1 projectors (PT-VW series etc.).
 --------------------------------------------------------------------------------
+Protocols["PANASONIC:PROJECTOR STX:NETWORK"] = {
+  make = "PANASONIC", model = "PROJECTOR STX",
+  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
+  transport = MODE.IP, port = 1024, connect = CONN.PERM,
+  baud = 9600, terminator = "\r", eol = "cr",
+  init = "",
+  vol_min = 0, vol_max = 100, vol_step = 1,
+  tx = {
+    pwr_on      = "\x02PON\x03",
+    pwr_off     = "\x02POF\x03",
+    input       = {
+      "\x02IIS:HD1\x03",
+      "\x02IIS:HD2\x03",
+      "\x02IIS:DL1\x03",
+      "\x02IIS:RG1\x03",
+    },
+    vol_up      = "\x02AUU\x03",
+    vol_down    = "\x02AUD\x03",
+    vol_default = "\x02AVL:020\x03",
+    vol         = "\x02AVL:",
+    amute_on    = "\x02AMT:1\x03",
+    amute_off   = "\x02AMT:0\x03",
+    vmute_on    = "\x02OSH:1\x03",
+    vmute_off   = "\x02OSH:0\x03",
+    freeze_on   = "\x02OFZ:1\x03",
+    freeze_off  = "\x02OFZ:0\x03",
+    q_pwr       = "\x02QPW\x03",
+    q_input     = "\x02QIN\x03",
+    q_vol       = "\x02QAV\x03",
+    q_amute     = "\x02QMT\x03",
+    q_vmute     = "\x02QSH\x03",
+    q_freeze    = "\x02QFZ\x03",
+    q_lamp      = "\x02Q$L\x03",
+  },
+  rx = {
+    pwr_off     = { "\x02OFF\x03", "\x02POF\x03" },
+    pwr_on      = { "\x02ON\x03", "\x02PON\x03" },
+    pwr_cooling = {},
+    pwr_warming = {},
+    input       = { "HD1", "HD2", "DL1", "RG1" },
+    volume      = "",
+    amute_off   = "0",
+    amute_on    = "1",
+    vmute_off   = "0",
+    vmute_on    = "1",
+    freeze_off  = "0",
+    freeze_on   = "1",
+    ack         = "",
+    rxerror     = "ER401",
+  },
+  vol_fmt = function(n)
+    local v = math.floor((n / 100) * 63 + 0.5)
+    return string.format("\x02AVL:%03d\x03", v)
+  end,
+}
+
+Protocols["PANASONIC:PROJECTOR STX:SERIAL"] = {
+  make = "PANASONIC", model = "PROJECTOR STX",
+  input_label = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBT", "NETWORK", "SDI" },
+  transport = MODE.SERIAL, port = 0, connect = CONN.PERM,
+  baud = 9600, terminator = "", eol = "none",
+  init = "",
+  rx_delim = "\x03",
+  vol_min = 0, vol_max = 100, vol_step = 1,
+  tx = {
+    pwr_on      = "\x02PON\x03",
+    pwr_off     = "\x02POF\x03",
+    input       = {
+      "\x02IIS:HD1\x03",
+      "\x02IIS:HD2\x03",
+      "\x02IIS:DL1\x03",
+      "\x02IIS:RG1\x03",
+    },
+    vol_up      = "\x02AUU\x03",
+    vol_down    = "\x02AUD\x03",
+    vol_default = "\x02AVL:020\x03",
+    vol         = "\x02AVL:",
+    amute_on    = "\x02AMT:1\x03",
+    amute_off   = "\x02AMT:0\x03",
+    vmute_on    = "\x02OSH:1\x03",
+    vmute_off   = "\x02OSH:0\x03",
+    freeze_on   = "\x02OFZ:1\x03",
+    freeze_off  = "\x02OFZ:0\x03",
+    q_pwr       = "\x02QPW\x03",
+    q_input     = "\x02QIN\x03",
+    q_vol       = "\x02QAV\x03",
+    q_amute     = "\x02QMT\x03",
+    q_vmute     = "\x02QSH\x03",
+    q_freeze    = "\x02QFZ\x03",
+    q_lamp      = "\x02Q$L\x03",
+  },
+  rx = {
+    pwr_off     = { "\x02OFF\x03", "\x02POF\x03" },
+    pwr_on      = { "\x02ON\x03", "\x02PON\x03" },
+    pwr_cooling = {},
+    pwr_warming = {},
+    input       = { "HD1", "HD2", "DL1", "RG1" },
+    volume      = "",
+    amute_off   = "0",
+    amute_on    = "1",
+    vmute_off   = "0",
+    vmute_on    = "1",
+    freeze_off  = "0",
+    freeze_on   = "1",
+    ack         = "",
+    rxerror     = "ER401",
+  },
+  vol_fmt = function(n)
+    local v = math.floor((n / 100) * 63 + 0.5)
+    return string.format("\x02AVL:%03d\x03", v)
+  end,
+}
+
 -- SONY PROJECTOR  NETWORK  (ADCP / SDAP style ASCII, LF)
 --------------------------------------------------------------------------------
 Protocols["SONY:PROJECTOR:NETWORK"] = {
