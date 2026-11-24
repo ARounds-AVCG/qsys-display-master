@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.26"
+local VERSION       = "1.0.27"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -356,8 +356,8 @@ Protocols["PANASONIC:PROJECTOR STX:NETWORK"] = {
     q_lamp      = "\x02Q$L\x03",
   },
   rx = {
-    pwr_off     = { "\x02OFF\x03", "\x02POF\x03" },
-    pwr_on      = { "\x02ON\x03", "\x02PON\x03" },
+    pwr_off     = { "\x02000\x03", "\x02OFF\x03", "\x02POF\x03" },
+    pwr_on      = { "\x02001\x03", "\x02ON\x03", "\x02PON\x03" },
     pwr_cooling = {},
     pwr_warming = {},
     input       = { "HD1", "HD2", "DL1", "RG1" },
@@ -413,8 +413,8 @@ Protocols["PANASONIC:PROJECTOR STX:SERIAL"] = {
     q_lamp      = "\x02Q$L\x03",
   },
   rx = {
-    pwr_off     = { "\x02OFF\x03", "\x02POF\x03" },
-    pwr_on      = { "\x02ON\x03", "\x02PON\x03" },
+    pwr_off     = { "\x02000\x03", "\x02OFF\x03", "\x02POF\x03" },
+    pwr_on      = { "\x02001\x03", "\x02ON\x03", "\x02PON\x03" },
     pwr_cooling = {},
     pwr_warming = {},
     input       = { "HD1", "HD2", "DL1", "RG1" },
