@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.27"
+local VERSION       = "1.0.28"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -710,7 +710,7 @@ Protocols["NEC EXX7:LCD:SERIAL"] = {
     vmute_off   = "",
     freeze_on   = "",
     freeze_off  = "",
-    q_pwr       = "",
+    q_pwr       = "\x01\x30\x41\x30\x41\x30\x36\x02\x30\x31\x44\x36\x03\x74\x0d",
     q_input     = "",
     q_vol       = "",
     q_amute     = "",
@@ -719,8 +719,8 @@ Protocols["NEC EXX7:LCD:SERIAL"] = {
     q_lamp      = "",
   },
   rx = {
-    pwr_off     = {},
-    pwr_on      = {},
+    pwr_off     = { "0004", "\x30\x30\x30\x34" },
+    pwr_on      = { "0001", "\x30\x30\x30\x31" },
     pwr_cooling = {},
     pwr_warming = {},
     input       = {},
