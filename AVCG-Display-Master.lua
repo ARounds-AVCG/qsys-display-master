@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.32"
+local VERSION       = "1.0.34"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -2082,6 +2082,42 @@ local function Power(cmd)
   PushFeedback()
 end
 
+-- Passthru text uses the same escapes as the protocol source.
+-- \xNN is one byte. \r \n \t and \\ are the usual characters.
+local function DecodeEscapes(s)
+  local out = {}
+  local i = 1
+  while i <= #s do
+    if s:sub(i, i) == "\\" and i < #s then
+      local n = s:sub(i + 1, i + 1)
+      local hex = s:sub(i + 2, i + 3)
+      if (n == "x" or n == "X") and #hex == 2 and hex:match("^%x%x$") then
+        out[#out + 1] = string.char(tonumber(hex, 16))
+        i = i + 4
+      elseif n == "r" then
+        out[#out + 1] = "\r"
+        i = i + 2
+      elseif n == "n" then
+        out[#out + 1] = "\n"
+        i = i + 2
+      elseif n == "t" then
+        out[#out + 1] = "\t"
+        i = i + 2
+      elseif n == "\\" then
+        out[#out + 1] = "\\"
+        i = i + 2
+      else
+        out[#out + 1] = s:sub(i, i)
+        i = i + 1
+      end
+    else
+      out[#out + 1] = s:sub(i, i)
+      i = i + 1
+    end
+  end
+  return table.concat(out)
+end
+
 function Control(cmd)
   if not cmd or cmd == "" then return end
   Debug("CMD " .. HexDump(cmd))
@@ -2311,7 +2347,7 @@ function Control(cmd)
   end
 
   if cmd:find("PASSTHRU=", 1, true) == 1 then
-    Enqueue(cmd:sub(10), true)
+    Enqueue(DecodeEscapes(cmd:sub(10)), true)
     return
   end
 
