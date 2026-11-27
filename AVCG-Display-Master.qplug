@@ -3,8 +3,8 @@
 
 PluginInfo = {
   Name = "AVCG~Display Master",
-  Version = "1.0.35",
-  BuildVersion = "1.0.35",
+  Version = "1.0.36",
+  BuildVersion = "1.0.36",
   Id = "avcg.display.master",
   Author = "Anthony Rounds, AV Control Group",
   Manufacturer = "AV Control Group",
@@ -166,6 +166,7 @@ function GetControlLayout(props)
       Color = { 10, 22, 40 },
       TextColor = { 80, 220, 240 },
       TextBoxStyle = "Normal",
+      CornerRadius = 4,
     }
   end
 
@@ -287,6 +288,7 @@ function GetControlLayout(props)
     Color = { 8, 16, 30 },
     TextColor = { 140, 220, 240 },
     TextBoxStyle = "Normal",
+    CornerRadius = 4,
   }
   label("Command", 16, 448, 60)
   field("Command", 80, 446, 760, 18)
