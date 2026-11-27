@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.31"
+local VERSION       = "1.0.32"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -1255,9 +1255,9 @@ local function LatchedPress(ctl, key, isOn, onCmd, offCmd)
   end
 end
 
--- Real Epson needs ESC/VP.net on every TCP connect, including reconnects.
--- Crestron RMC3 Serial I/O farm: leave Handshake off. That does not
--- suppress the ESC/VP.net string — a real Epson drops the socket without it.
+-- A protocol with a non-empty init sends that handshake on every TCP
+-- connect, including reconnects. The Handshake button does not gate it.
+-- Epson is ESC/VP.net. Any later model that needs a handshake just sets init.
 local function HandshakeOn()
   local c = C("Handshake")
   if not c then return true end
@@ -1267,9 +1267,7 @@ local function HandshakeOn()
 end
 
 local function NeedHandshake()
-  if not Display or not Display.init or Display.init == "" then return false end
-  if Display.init:find("ESC/VP.net", 1, true) then return true end
-  return HandshakeOn()
+  return Display ~= nil and Display.init ~= nil and Display.init ~= ""
 end
 
 --------------------------------------------------------------------------------
