@@ -3,8 +3,8 @@
 
 PluginInfo = {
   Name = "AVCG~Display Master",
-  Version = "1.0.36",
-  BuildVersion = "1.0.36",
+  Version = "1.0.37",
+  BuildVersion = "1.0.37",
   Id = "avcg.display.master",
   Author = "Anthony Rounds, AV Control Group",
   Manufacturer = "AV Control Group",
@@ -160,7 +160,7 @@ function GetControlLayout(props)
       PrettyName = name,
       Style = style or "Text",
       Position = { x, y },
-      Size = { w, h or 16 },
+      Size = { w, h or 20 },
       FontSize = 10,
       HTextAlign = "Left",
       Color = { 10, 22, 40 },
@@ -177,7 +177,7 @@ function GetControlLayout(props)
       ButtonVisualStyle = "Flat",
       Legend = legend,
       Position = { x, y },
-      Size = { w, 20 },
+      Size = { w, 24 },
       FontSize = 9,
       CornerRadius = 4,
       Color = { 0, 150, 220 },
@@ -189,98 +189,98 @@ function GetControlLayout(props)
     }
   end
 
-  group("MODULE INFO", 6, 26, 418, 214)
-  group("CONNECTION", 430, 26, 248, 214)
-  group("CONTROL", 684, 26, 306, 214)
-  group("LOG", 6, 246, 984, 260)
+  group("MODULE INFO", 6, 26, 418, 230)
+  group("CONNECTION", 430, 26, 248, 230)
+  group("CONTROL", 684, 26, 306, 230)
+  group("LOG", 6, 264, 984, 268)
 
-  label("Model", 14, 6, 50)
-  field("Model", 64, 4, 620, 18, "ComboBox")
+  label("Model", 14, 4, 50)
+  field("Model", 64, 2, 620, 22, "ComboBox")
 
   label("Module Info", 14, 48)
-  field("ModuleInfo", 96, 46, 310, 16)
-  label("Conn Status", 14, 68)
-  field("ConnStatus", 96, 66, 270, 16)
+  field("ModuleInfo", 96, 46, 310, 20)
+  label("Conn Status", 14, 72)
+  field("ConnStatus", 96, 70, 270, 20)
   layout["CommsOk"] = {
     PrettyName = "Comms OK",
     Style = "Led",
-    Position = { 374, 66 },
+    Position = { 374, 73 },
     Size = { 14, 14 },
     Color = { 0, 210, 120 },
     OffColor = { 40, 60, 70 },
     UnlinkOffColor = true,
   }
-  label("Make Model", 14, 88)
-  field("MakeModel", 96, 86, 310, 16)
-  label("Status", 14, 108)
-  field("Status", 96, 106, 310, 16)
-  label("Tx Log", 14, 128)
-  field("TxLog", 96, 126, 310, 16)
-  label("Rx Log", 14, 148)
-  field("RxLog", 96, 146, 310, 16)
-  label("Debug", 14, 168)
-  field("DebugText", 96, 166, 310, 16)
-  label("Power", 14, 190, 40)
-  field("PowerState", 54, 188, 70, 16)
-  label("Lamp", 130, 190, 36)
-  field("LampHours", 166, 188, 60, 16)
-  label("Vol %", 232, 190, 36)
-  field("VolumeFb", 268, 188, 44, 16)
+  label("Make Model", 14, 96)
+  field("MakeModel", 96, 94, 310, 20)
+  label("Status", 14, 120)
+  field("Status", 96, 118, 310, 20)
+  label("Tx Log", 14, 144)
+  field("TxLog", 96, 142, 310, 20)
+  label("Rx Log", 14, 168)
+  field("RxLog", 96, 166, 310, 20)
+  label("Debug", 14, 192)
+  field("DebugText", 96, 190, 310, 20)
+  label("Power", 14, 216, 40)
+  field("PowerState", 54, 214, 70, 20)
+  label("Lamp", 130, 216, 36)
+  field("LampHours", 166, 214, 60, 20)
+  label("Vol %", 232, 216, 36)
+  field("VolumeFb", 268, 214, 44, 20)
 
   label("IP Address", 438, 48)
-  field("IPAddress", 518, 46, 148, 16)
-  label("IP Port", 438, 70)
-  field("IPPort", 518, 68, 148, 16)
-  label("Baud", 438, 92)
-  field("Baud", 518, 90, 148, 16)
-  label("Password", 438, 114)
-  field("Password", 518, 112, 148, 16)
-  button("PollingEnable", 438, 140, 74, "POLLING", "Polling")
-  button("DebugEnable", 438, 164, 74, "DEBUG", "Debug")
-  button("Handshake", 438, 188, 74, "HANDSHAKE", "Handshake")
-  button("Connect", 518, 140, 148, "CONNECT", "Connect")
-  button("Disconnect", 518, 164, 148, "DISCONNECT", "Disconnect")
-  button("Reinit", 518, 188, 70, "REINIT", "Reinit")
-  button("Clear Logs", 592, 188, 74, "CLEAR", "Clear Logs")
+  field("IPAddress", 518, 46, 148, 20)
+  label("IP Port", 438, 72)
+  field("IPPort", 518, 70, 148, 20)
+  label("Baud", 438, 96)
+  field("Baud", 518, 94, 148, 20)
+  label("Password", 438, 120)
+  field("Password", 518, 118, 148, 20)
+  button("PollingEnable", 438, 148, 74, "POLLING", "Polling")
+  button("DebugEnable", 438, 176, 74, "DEBUG", "Debug")
+  button("Handshake", 438, 204, 74, "HANDSHAKE", "Handshake")
+  button("Connect", 518, 148, 148, "CONNECT", "Connect")
+  button("Disconnect", 518, 176, 148, "DISCONNECT", "Disconnect")
+  button("Reinit", 518, 204, 70, "REINIT", "Reinit")
+  button("Clear Logs", 592, 204, 74, "CLEAR", "Clear Logs")
 
   label("Power", 692, 48, 44)
   button("Power 1", 740, 44, 70, "OFF", "Power Off")
   button("Power 2", 814, 44, 70, "ON", "Power On")
   button("Power 3", 888, 44, 84, "TOGGLE", "Power Toggle")
 
-  label("Input", 692, 78, 44)
+  label("Input", 692, 80, 44)
   local inputLegend = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBASET", "MIRROR", "SDI" }
   local inputPos = {
-    { 740, 74 }, { 814, 74 }, { 888, 74 },
-    { 740, 98 }, { 814, 98 }, { 898, 98 },
+    { 740, 76 }, { 814, 76 }, { 888, 76 },
+    { 740, 104 }, { 814, 104 }, { 898, 104 },
   }
   local inputW = { 70, 70, 70, 70, 80, 68 }
   for i = 1, 6 do
     button("Input " .. i, inputPos[i][1], inputPos[i][2], inputW[i], inputLegend[i], "Input " .. i)
   end
 
-  label("Volume", 692, 130, 44)
-  button("Volume 1", 740, 126, 70, "UP", "Volume Up")
-  button("Volume 2", 814, 126, 70, "DOWN", "Volume Down")
-  button("Volume 3", 888, 126, 84, "DEFAULT", "Volume Default")
+  label("Volume", 692, 140, 44)
+  button("Volume 1", 740, 136, 70, "UP", "Volume Up")
+  button("Volume 2", 814, 136, 70, "DOWN", "Volume Down")
+  button("Volume 3", 888, 136, 84, "DEFAULT", "Volume Default")
 
-  label("Level", 692, 158, 44)
+  label("Level", 692, 170, 44)
   layout["VolumeLevel"] = {
     PrettyName = "Volume Level",
     Style = "Fader",
-    Position = { 740, 156 },
-    Size = { 200, 18 },
+    Position = { 740, 166 },
+    Size = { 200, 22 },
     Color = { 0, 170, 230 },
   }
 
-  button("Mute", 740, 186, 70, "MUTE", "Mute")
-  button("AVMute", 814, 186, 80, "AV MUTE", "AV Mute")
-  button("Freeze", 898, 186, 74, "FREEZE", "Freeze")
+  button("Mute", 740, 200, 70, "MUTE", "Mute")
+  button("AVMute", 814, 200, 80, "AV MUTE", "AV Mute")
+  button("Freeze", 898, 200, 74, "FREEZE", "Freeze")
 
   layout["EventLog"] = {
     PrettyName = "Event Log",
     Style = "Text",
-    Position = { 16, 266 },
+    Position = { 16, 284 },
     Size = { 964, 168 },
     FontSize = 10,
     HTextAlign = "Left",
@@ -290,12 +290,12 @@ function GetControlLayout(props)
     TextBoxStyle = "Normal",
     CornerRadius = 4,
   }
-  label("Command", 16, 448, 60)
-  field("Command", 80, 446, 760, 18)
-  button("SendCommand", 848, 444, 120, "SEND", "Send Command")
-  label("Passthru", 16, 474, 60)
-  field("Passthru", 80, 472, 760, 18)
-  button("SendPassthru", 848, 470, 120, "PASSTHRU", "Send Passthru")
+  label("Command", 16, 464, 60)
+  field("Command", 80, 462, 760, 22)
+  button("SendCommand", 848, 460, 120, "SEND", "Send Command")
+  label("Passthru", 16, 492, 60)
+  field("Passthru", 80, 490, 760, 22)
+  button("SendPassthru", 848, 488, 120, "PASSTHRU", "Send Passthru")
 
   return layout, graphics
 end
