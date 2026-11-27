@@ -3,8 +3,8 @@
 
 PluginInfo = {
   Name = "AVCG~Display Master",
-  Version = "1.0.34",
-  BuildVersion = "1.0.34",
+  Version = "1.0.35",
+  BuildVersion = "1.0.35",
   Id = "avcg.display.master",
   Author = "Anthony Rounds, AV Control Group",
   Manufacturer = "AV Control Group",
@@ -16,7 +16,7 @@ function GetPrettyName(props)
 end
 
 function GetColor(props)
-  return { 48, 48, 48 }
+  return { 10, 18, 32 }
 end
 
 function GetProperties()
@@ -134,12 +134,12 @@ function GetControlLayout(props)
       Text = text,
       Position = { x, y },
       Size = { w, h },
-      FontSize = 11,
-      Color = { 210, 210, 210 },
-      Fill = { 28, 28, 28 },
-      StrokeColor = { 90, 90, 90 },
+      FontSize = 12,
+      Color = { 0, 200, 230 },
+      Fill = { 12, 24, 42 },
+      StrokeColor = { 32, 110, 150 },
       StrokeWidth = 1,
-      CornerRadius = 2,
+      CornerRadius = 6,
     }
   end
 
@@ -151,7 +151,7 @@ function GetControlLayout(props)
       Size = { w or 78, 14 },
       FontSize = 10,
       HTextAlign = "Left",
-      Color = { 190, 190, 190 },
+      Color = { 150, 190, 210 },
     }
   end
 
@@ -163,7 +163,9 @@ function GetControlLayout(props)
       Size = { w, h or 16 },
       FontSize = 10,
       HTextAlign = "Left",
-      Color = { 230, 230, 230 },
+      Color = { 10, 22, 40 },
+      TextColor = { 80, 220, 240 },
+      TextBoxStyle = "Normal",
     }
   end
 
@@ -171,18 +173,25 @@ function GetControlLayout(props)
     layout[name] = {
       PrettyName = pretty or legend or name,
       Style = "Button",
+      ButtonVisualStyle = "Flat",
       Legend = legend,
       Position = { x, y },
       Size = { w, 20 },
       FontSize = 9,
-      Color = { 20, 20, 20 },
+      CornerRadius = 4,
+      Color = { 0, 150, 220 },
+      OffColor = { 16, 36, 58 },
+      UnlinkOffColor = true,
+      TextColor = { 230, 245, 255 },
+      StrokeColor = { 40, 130, 180 },
+      StrokeWidth = 1,
     }
   end
 
-  group("Status", 6, 26, 418, 214)
-  group("Connection", 430, 26, 248, 214)
-  group("Control", 684, 26, 306, 214)
-  group("Event Log", 6, 246, 984, 260)
+  group("MODULE INFO", 6, 26, 418, 214)
+  group("CONNECTION", 430, 26, 248, 214)
+  group("CONTROL", 684, 26, 306, 214)
+  group("LOG", 6, 246, 984, 260)
 
   label("Model", 14, 6, 50)
   field("Model", 64, 4, 620, 18, "ComboBox")
@@ -196,7 +205,9 @@ function GetControlLayout(props)
     Style = "Led",
     Position = { 374, 66 },
     Size = { 14, 14 },
-    Color = { 0, 180, 0 },
+    Color = { 0, 210, 120 },
+    OffColor = { 40, 60, 70 },
+    UnlinkOffColor = true,
   }
   label("Make Model", 14, 88)
   field("MakeModel", 96, 86, 310, 16)
@@ -258,7 +269,7 @@ function GetControlLayout(props)
     Style = "Fader",
     Position = { 740, 156 },
     Size = { 200, 18 },
-    Color = { 230, 230, 230 },
+    Color = { 0, 170, 230 },
   }
 
   button("Mute", 740, 186, 70, "MUTE", "Mute")
@@ -273,7 +284,9 @@ function GetControlLayout(props)
     FontSize = 10,
     HTextAlign = "Left",
     VTextAlign = "Top",
-    Color = { 230, 230, 230 },
+    Color = { 8, 16, 30 },
+    TextColor = { 140, 220, 240 },
+    TextBoxStyle = "Normal",
   }
   label("Command", 16, 448, 60)
   field("Command", 80, 446, 760, 18)
