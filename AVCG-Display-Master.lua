@@ -5,7 +5,7 @@
 --------------------------------------------------------------------------------
 -- CONSTANTS
 --------------------------------------------------------------------------------
-local VERSION       = "1.0.30"
+local VERSION       = "1.0.31"
 local MODULE_NAME   = "AVCG-Display Master"
 
 local PWR = { OFF = 0, ON = 1, WARMING = 2, COOLING = 3, FAIL = 4 }
@@ -41,7 +41,7 @@ end
 -- that send DISPLAY=EPSON:PROJECTOR:NETWORK keep working.
 -- terminator  = string appended on TX
 -- eol         = "cr" | "lf" | "crlf" | "none" | "any"
--- init        = bytes sent once on TCP connect (Epson ESC/VP.net etc.)
+-- init        = bytes sent on every TCP connect (Epson ESC/VP.net etc.)
 -- vol_fmt     = optional function(nativeLevel) -> tx string
 -- vol_min     = device volume minimum (VolumeLevel 0%)
 -- vol_max     = device volume maximum (VolumeLevel 100%, not snapped)
@@ -1039,6 +1039,7 @@ local LastPollLamp = 0
 local LastTxAt = os.time()
 local SuppressUI = false
 local ReadyToSend = true
+local HandshakePending = false
 
 --------------------------------------------------------------------------------
 -- CONTROL ACCESSORS  (safe if a control was not created)
@@ -1254,13 +1255,21 @@ local function LatchedPress(ctl, key, isOn, onCmd, offCmd)
   end
 end
 
--- Real Epson needs ESC/VP.net. Crestron RMC3 Serial I/O farm: leave Handshake off.
+-- Real Epson needs ESC/VP.net on every TCP connect, including reconnects.
+-- Crestron RMC3 Serial I/O farm: leave Handshake off. That does not
+-- suppress the ESC/VP.net string — a real Epson drops the socket without it.
 local function HandshakeOn()
   local c = C("Handshake")
   if not c then return true end
   local el = IsArray(c) and c[1] or c
   if el.Boolean == nil then return true end
   return el.Boolean
+end
+
+local function NeedHandshake()
+  if not Display or not Display.init or Display.init == "" then return false end
+  if Display.init:find("ESC/VP.net", 1, true) then return true end
+  return HandshakeOn()
 end
 
 --------------------------------------------------------------------------------
@@ -1439,6 +1448,13 @@ local function SendRaw(payload)
 end
 
 local ConnectNow, DisconnectNow, ProcessQueue  -- forward decls
+
+local function ReleaseHandshake()
+  if not HandshakePending then return end
+  HandshakePending = false
+  ReadyToSend = true
+  ProcessQueue()
+end
 
 local function OpenSerial()
   local sp = SerialPort()
@@ -1890,22 +1906,41 @@ Tcp.EventHandler = function(sock, evt, err)
         if Display and (Status.input_request or "") ~= "" then Control("POWER?") end
       end, 1.0)
     end
-    if Display and Display.init and Display.init ~= "" and HandshakeOn() then
-      Debug("INIT handshake")
+    -- Every new TCP session, including a reconnect after the projector
+    -- closed the socket. Do not send PWR? until the handshake is answered.
+    if NeedHandshake() then
+      HandshakePending = true
       ReadyToSend = false
-      sock:Write(Display.init)
-      -- Let the projector ACK ESC/VP.net before the first queued command
-      -- (otherwise handshake + PWR ON land in one TCP packet).
+      local frame = Display.init
+      LastTxAt = Now()
+      SetString("TxLog", HexDump(frame))
+      Notify("HANDSHAKE " .. HexDump(frame))
+      sock:Write(frame)
       Timer.CallAfter(function()
-        ReadyToSend = true
-        ProcessQueue()
-      end, 0.2)
+        if HandshakePending then
+          Notify("HANDSHAKE TIMEOUT")
+          ReleaseHandshake()
+        end
+      end, 1.5)
     else
+      HandshakePending = false
+      if Display and Display.init and Display.init ~= "" then
+        Notify("HANDSHAKE SKIPPED")
+      end
       ReadyToSend = true
       ProcessQueue()
     end
 
   elseif evt == TcpSocket.Events.Data then
+    if HandshakePending then
+      local chunk = sock:Read(sock.BufferLength)
+      if chunk and #chunk > 0 then
+        SetString("RxLog", HexDump(chunk))
+        Notify("HANDSHAKE OK " .. HexDump(chunk))
+        HandleRx(chunk)
+        ReleaseHandshake()
+      end
+    else
     local e, custom = EolFor(Tcp)
     if not e then
       local chunk = sock:Read(sock.BufferLength)
@@ -1913,8 +1948,11 @@ Tcp.EventHandler = function(sock, evt, err)
     else
       DrainText(sock, e, custom)
     end
+    end
 
   elseif evt == TcpSocket.Events.Closed then
+    HandshakePending = false
+    ReadyToSend = true
     Client.status = "disconnected"
     Queue.inflight = false
     RxHold = ""
