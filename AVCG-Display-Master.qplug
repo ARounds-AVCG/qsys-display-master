@@ -3,8 +3,8 @@
 
 PluginInfo = {
   Name = "AVCG~Display Master",
-  Version = "1.0.32",
-  BuildVersion = "1.0.32",
+  Version = "1.0.33",
+  BuildVersion = "1.0.33",
   Id = "avcg.display.master",
   Author = "Anthony Rounds, AV Control Group",
   Manufacturer = "AV Control Group",
@@ -179,35 +179,35 @@ function GetControlLayout(props)
     }
   end
 
-  group("Status", 6, 26, 318, 214)
-  group("Connection", 330, 26, 248, 214)
-  group("Control", 584, 26, 406, 214)
+  group("Status", 6, 26, 418, 214)
+  group("Connection", 430, 26, 248, 214)
+  group("Control", 684, 26, 306, 214)
   group("Event Log", 6, 246, 984, 260)
 
   label("Model", 14, 6, 50)
-  field("Model", 64, 4, 500, 18, "Combo Box")
+  field("Model", 64, 4, 620, 18, "ComboBox")
 
   label("Module Info", 14, 48)
-  field("ModuleInfo", 96, 46, 216, 16)
+  field("ModuleInfo", 96, 46, 310, 16)
   label("Conn Status", 14, 68)
-  field("ConnStatus", 96, 66, 190, 16)
+  field("ConnStatus", 96, 66, 270, 16)
   layout["CommsOk"] = {
     PrettyName = "Comms OK",
     Style = "Led",
-    Position = { 294, 66 },
+    Position = { 374, 66 },
     Size = { 14, 14 },
     Color = { 0, 180, 0 },
   }
   label("Make Model", 14, 88)
-  field("MakeModel", 96, 86, 216, 16)
+  field("MakeModel", 96, 86, 310, 16)
   label("Status", 14, 108)
-  field("Status", 96, 106, 216, 16)
+  field("Status", 96, 106, 310, 16)
   label("Tx Log", 14, 128)
-  field("TxLog", 96, 126, 216, 16)
+  field("TxLog", 96, 126, 310, 16)
   label("Rx Log", 14, 148)
-  field("RxLog", 96, 146, 216, 16)
+  field("RxLog", 96, 146, 310, 16)
   label("Debug", 14, 168)
-  field("DebugText", 96, 166, 216, 16)
+  field("DebugText", 96, 166, 310, 16)
   label("Power", 14, 190, 40)
   field("PowerState", 54, 188, 70, 16)
   label("Lamp", 130, 190, 36)
@@ -215,55 +215,55 @@ function GetControlLayout(props)
   label("Vol %", 232, 190, 36)
   field("VolumeFb", 268, 188, 44, 16)
 
-  label("IP Address", 338, 48)
-  field("IPAddress", 418, 46, 148, 16)
-  label("IP Port", 338, 70)
-  field("IPPort", 418, 68, 148, 16)
-  label("Baud", 338, 92)
-  field("Baud", 418, 90, 148, 16)
-  label("Password", 338, 114)
-  field("Password", 418, 112, 148, 16)
-  button("PollingEnable", 338, 140, 74, "POLLING", "Polling")
-  button("DebugEnable", 338, 164, 74, "DEBUG", "Debug")
-  button("Handshake", 338, 188, 74, "HANDSHAKE", "Handshake")
-  button("Connect", 418, 140, 148, "CONNECT", "Connect")
-  button("Disconnect", 418, 164, 148, "DISCONNECT", "Disconnect")
-  button("Reinit", 418, 188, 70, "REINIT", "Reinit")
-  button("Clear Logs", 492, 188, 74, "CLEAR", "Clear Logs")
+  label("IP Address", 438, 48)
+  field("IPAddress", 518, 46, 148, 16)
+  label("IP Port", 438, 70)
+  field("IPPort", 518, 68, 148, 16)
+  label("Baud", 438, 92)
+  field("Baud", 518, 90, 148, 16)
+  label("Password", 438, 114)
+  field("Password", 518, 112, 148, 16)
+  button("PollingEnable", 438, 140, 74, "POLLING", "Polling")
+  button("DebugEnable", 438, 164, 74, "DEBUG", "Debug")
+  button("Handshake", 438, 188, 74, "HANDSHAKE", "Handshake")
+  button("Connect", 518, 140, 148, "CONNECT", "Connect")
+  button("Disconnect", 518, 164, 148, "DISCONNECT", "Disconnect")
+  button("Reinit", 518, 188, 70, "REINIT", "Reinit")
+  button("Clear Logs", 592, 188, 74, "CLEAR", "Clear Logs")
 
-  label("Power", 592, 48, 44)
-  button("Power 1", 640, 44, 70, "OFF", "Power Off")
-  button("Power 2", 714, 44, 70, "ON", "Power On")
-  button("Power 3", 788, 44, 84, "TOGGLE", "Power Toggle")
+  label("Power", 692, 48, 44)
+  button("Power 1", 740, 44, 70, "OFF", "Power Off")
+  button("Power 2", 814, 44, 70, "ON", "Power On")
+  button("Power 3", 888, 44, 84, "TOGGLE", "Power Toggle")
 
-  label("Input", 592, 78, 44)
+  label("Input", 692, 78, 44)
   local inputLegend = { "HDMI 1", "HDMI 2", "HDMI 3", "HDBASET", "MIRROR", "SDI" }
   local inputPos = {
-    { 640, 74 }, { 714, 74 }, { 788, 74 },
-    { 640, 98 }, { 714, 98 }, { 798, 98 },
+    { 740, 74 }, { 814, 74 }, { 888, 74 },
+    { 740, 98 }, { 814, 98 }, { 898, 98 },
   }
   local inputW = { 70, 70, 70, 70, 80, 68 }
   for i = 1, 6 do
     button("Input " .. i, inputPos[i][1], inputPos[i][2], inputW[i], inputLegend[i], "Input " .. i)
   end
 
-  label("Volume", 592, 130, 44)
-  button("Volume 1", 640, 126, 70, "UP", "Volume Up")
-  button("Volume 2", 714, 126, 70, "DOWN", "Volume Down")
-  button("Volume 3", 788, 126, 84, "DEFAULT", "Volume Default")
+  label("Volume", 692, 130, 44)
+  button("Volume 1", 740, 126, 70, "UP", "Volume Up")
+  button("Volume 2", 814, 126, 70, "DOWN", "Volume Down")
+  button("Volume 3", 888, 126, 84, "DEFAULT", "Volume Default")
 
-  label("Level", 592, 158, 44)
+  label("Level", 692, 158, 44)
   layout["VolumeLevel"] = {
     PrettyName = "Volume Level",
     Style = "Fader",
-    Position = { 640, 156 },
-    Size = { 230, 18 },
+    Position = { 740, 156 },
+    Size = { 200, 18 },
     Color = { 230, 230, 230 },
   }
 
-  button("Mute", 640, 186, 70, "MUTE", "Mute")
-  button("AVMute", 714, 186, 80, "AV MUTE", "AV Mute")
-  button("Freeze", 798, 186, 74, "FREEZE", "Freeze")
+  button("Mute", 740, 186, 70, "MUTE", "Mute")
+  button("AVMute", 814, 186, 80, "AV MUTE", "AV Mute")
+  button("Freeze", 898, 186, 74, "FREEZE", "Freeze")
 
   layout["EventLog"] = {
     PrettyName = "Event Log",
